@@ -1,0 +1,51 @@
+%%writefile dfs.cpp
+
+#include<iostream>
+#include<vector>
+#include<stack>
+#include<omp.h>
+
+using namespace std;
+
+void dfs(vector<vector<int>>& graph, int start, vector<bool>& visited) {
+  stack<int> s;
+  s.push(start);
+  visited[start] = true;
+  cout << "Visited: " << start << endl; // Print the starting node
+  #pragma omp parallel
+  {
+    #pragma omp single
+    {
+      while (!s.empty()) {
+        int vertex = s.top();
+        s.pop();
+        #pragma omp task firstprivate(vertex)
+        {
+          for (int neighbour : graph[vertex]) {
+            if (!visited[neighbour]) {
+              s.push(neighbour);
+              visited[neighbour] = true;
+              cout << "Visited: " << neighbour << endl; // Print the visited node
+              dfs(graph, neighbour, visited);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void parallel_dfs(vector<vector<int>>& graph, int start) {
+  vector<bool> visited(graph.size(), false);
+  dfs(graph, start, visited);
+}
+
+int main() {
+  vector<vector<int>> graph = {{1, 2}, {0, 3}, {0}, {1}};
+  parallel_dfs(graph, 0);
+  return 0;
+}
+////next code
+
+!g++ dfs.cpp -o dfs -fopenmp
+!./dfs
